@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Contabilidade Básica</title> 
+    <style>
+      :root {
+        --bg: #f7f8fb;
+        --card: #ffffff;
+        --accent: #2b6cb0;
+        --muted: #6b7280;
+        --maxw: 1000px;
+      }
+
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial;
+        background: var(--bg);
+        color: #111827;
+        margin: 0;
+        padding: 32px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .container {
+        max-width: var(--maxw);
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      header h1 {
+        font-size: 28px;
+        margin: 0;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      /* Layout */
+      .grid {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 24px;
+      }
+
+      nav {
+        position: sticky;
+        top: 24px;
+        align-self: start;
+      }
+
+      .toc {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      }
+
+      .toc h2 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+      }
+
+      .toc ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .toc a {
+        display: block;
+        padding: 6px 8px;
+        border-radius: 8px;
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 14px;
+      }
+
+      .toc a:hover {
+        background: #eef2ff;
+      }
+
+      main {
+        background: var(--card);
+        padding: 28px;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      }
+
+      section {
+        margin-bottom: 28px;
+      }
+
+      h2.section-title {
+        font-size: 20px;
+        margin: 0 0 12px 0;
+        border-left: 4px solid var(--accent);
+        padding-left: 12px;
+      }
+
+      h3 {
+        margin: 0 0 8px 0;
+        color: #0f172a;
+      }
+
+      p {
+        line-height: 1.6;
+        color: #111827;
+        margin: 0 0 12px 0;
+      }
+
+      ul, ol {
+        margin: 8px 0 12px 20px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+      }
+
+      th,
+      td {
+        border: 1px solid #e6e8eb;
+        padding: 8px;
+        text-align: left;
+      }
+
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* Responsive */
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        nav {
+          position: relative;
+          order: 2;
+          margin-bottom: 16px;
+        }
+      }
+
+      /* Print-friendly tweaks */
+      @media print {
+        body {
+          background: white;
+          padding: 12px;
+        }
+        nav {
+          display: none;
+        }
+        main {
+          box-shadow: none;
+          border-radius: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <h1>Contabilidade Básica</h1>
+          <p>
+            Pesquisa desenvolvida pela
+            <span title="Davi de Moraes, Caio Peccora, Guilherme Barbosa, Gustavo Carrias, Elisabeth Silva, André Felipe e João Paulo.">
+              Equipe Contabil
+            </span>
+            , com apoio do Professor Roberto Carlos Raymundo da Silva.
+          </p>
+        </div>
+      </header>
+
+      <div class="grid">
+        <nav>
+          <div class="toc">
+            <h2>Sumário</h2>
+            <ul>
+              <li><a href="#introducao">1.1 Introdução à Contabilidade</a></li>
+              <li><a href="#patrimonio">1.2 Patrimônio</a></li>
+              <li><a href="#principios">1.3 Princípios Contábeis</a></li>
+              <li><a href="#plano-de-contas">1.4 Plano de Contas</a></li>
+              <li><a href="#escrituracao">1.5 Escrituração Contábil</a></li>
+              <li><a href="#formacao-resultado">1.6 Elementos da Formação do Resultado</a></li>
+              <li><a href="#demonstracoes">1.7 Demonstrações Contábeis Básicas</a></li>
+              <li><a href="#planejamento">1.8 Planejamento Financeiro</a></li>
+              <li><a href="#custos">1.9 Controle de Custos e Precificação</a></li>
+              <li><a href="#obrigacoes">1.10 Obrigações Fiscais e Tributárias</a></li>
+            </ul>
+          </div>
+        </nav>
+
+        <main>
+          <section id="introducao">
+            <h2 class="section-title">1.1 Introdução à Contabilidade</h2>
+            <h3>Conceito de contabilidade</h3>
+            <p>
+              A contabilidade é uma ciência social aplicada que tem como função registrar, organizar, controlar e interpretar todos os fatos econômicos que afetam o patrimônio de uma entidade. Ela é essencial para compreender o desempenho financeiro, avaliar resultados e fornecer informações confiáveis para a tomada de decisão.
+            </p>
+            <p>
+              Além de registrar transações financeiras, a contabilidade permite monitorar a evolução patrimonial da empresa, identificar riscos e oportunidades, e servir como base para análises estratégicas, como avaliação de investimentos, liquidez e rentabilidade.
+            </p>
+            <h3>Finalidade e importância</h3>
+            <ul>
+              <li>Organizar e controlar o patrimônio da empresa, garantindo que todos os bens, direitos e obrigações sejam devidamente registrados;</li>
+              <li>Fornecer informações precisas para tomada de decisão, planejamento estratégico e controle gerencial;</li>
+              <li>Assegurar o cumprimento de obrigações legais e fiscais, evitando penalidades, multas e problemas judiciais;</li>
+              <li>Permitir avaliação confiável de lucros, prejuízos e indicadores financeiros, favorecendo a transparência e credibilidade perante investidores, bancos e órgãos reguladores.</li>
+            </ul>
+            <h3>Usuários da contabilidade</h3>
+            <p>
+              Os usuários da contabilidade se dividem em internos e externos. Os internos incluem gestores, sócios e colaboradores, que utilizam as informações para decisões estratégicas, planejamento e controle interno. Os externos englobam bancos, investidores, órgãos fiscais e fornecedores, que avaliam a saúde financeira e a conformidade da empresa.
+            </p>
+          </section>
+
+          <section id="patrimonio">
+            <h2 class="section-title">1.2 Patrimônio</h2>
+            <h3>O que é o Patrimônio?</h3>
+            <p>
+              Patrimônio é o conjunto de bens, direitos e obrigações que pertencem a uma entidade em determinado momento. Ele representa o valor econômico total controlado pela empresa, que será utilizado para gerar receitas e cumprir obrigações.
+            </p>
+            <h3>Elementos do patrimônio</h3>
+            <ul>
+              <li><strong>Bens:</strong> recursos tangíveis ou intangíveis, como imóveis, veículos, máquinas, estoques, patentes e softwares;</li>
+              <li><strong>Direitos:</strong> valores a receber, como duplicatas, empréstimos concedidos, aluguéis e créditos com clientes;</li>
+              <li><strong>Obrigações:</strong> dívidas e compromissos assumidos, como contas a pagar, empréstimos, tributos e fornecedores.</li>
+            </ul>
+            <h3>Patrimônio Líquido</h3>
+            <p>
+              O Patrimônio Líquido representa a diferença entre os bens e direitos da empresa e suas obrigações. É a riqueza pertencente aos sócios ou acionistas. Fórmula: <strong>PL = Bens + Direitos − Obrigações</strong>. Ele indica a saúde financeira e a capacidade de sustentar operações futuras.
+            </p>
+          </section>
+
+          <section id="principios">
+            <h2 class="section-title">1.3 Princípios Contábeis</h2>
+            <p>
+              Os princípios contábeis são normas que orientam a prática contábil, garantindo que os registros sejam confiáveis, comparáveis e consistentes. Eles fundamentam a elaboração das demonstrações contábeis e protegem a credibilidade da informação.
+            </p>
+            <ul>
+              <li><strong>Entidade:</strong> a contabilidade deve separar os bens e direitos da empresa dos bens pessoais dos sócios;</li>
+              <li><strong>Continuidade:</strong> pressupõe que a empresa continuará em operação no futuro previsível;</li>
+              <li><strong>Valor original:</strong> ativos devem ser registrados pelo custo de aquisição, evitando distorções causadas por valores de mercado;</li>
+              <li><strong>Competência:</strong> receitas e despesas são reconhecidas no período em que ocorrem, independentemente do pagamento;</li>
+              <li><strong>Prudência:</strong> perdas prováveis devem ser registradas imediatamente, enquanto ganhos somente quando realizados;</li>
+              <li><strong>Atualização monetária:</strong> ajusta valores para refletir a inflação ou variação monetária, preservando a veracidade econômica.</li>
+            </ul>
+          </section>
+
+          <section id="plano-de-contas">
+            <h2 class="section-title">1.4 Plano de Contas</h2>
+            <p>
+              O Plano de Contas é um instrumento que organiza e padroniza as contas contábeis da empresa, permitindo registros uniformes e análises precisas. Ele é essencial para a escrituração contábil correta e para a geração de relatórios consistentes.
+            </p>
+            <ul>
+              <li>Contas patrimoniais: Ativo (bens e direitos), Passivo (obrigações) e Patrimônio Líquido;</li>
+              <li>Contas de resultado: Receitas (entradas) e Despesas (saídas), fundamentais para apuração do lucro ou prejuízo;</li>
+              <li>Códigos e nomenclaturas padronizados: permitem identificação rápida das contas, facilitando conciliação, auditoria e relatórios gerenciais.</li>
+            </ul>
+          </section>
+
+          <section id="escrituracao">
+            <h2 class="section-title">1.5 Escrituração Contábil</h2>
+            <p>
+              A escrituração contábil é o registro sistemático de todos os fatos econômicos que afetam o patrimônio. Ela é fundamental para acompanhar as operações da empresa, realizar auditorias e fornecer informações confiáveis para gestores e órgãos reguladores.
+            </p>
+            <ul>
+              <li><strong>Partidas Simples:</strong> registra apenas a entrada ou saída de um elemento patrimonial;</li>
+              <li><strong>Partidas Dobradas:</strong> registra simultaneamente o débito e crédito, mantendo o equilíbrio contábil e garantindo a consistência dos registros;</li>
+              <li>Documentos de suporte: notas fiscais, recibos e contratos devem sempre ser armazenados para comprovar as transações.</li>
+            </ul>
+          </section>
+
+          <section id="formacao-resultado">
+            <h2 class="section-title">1.6 Elementos da Formação do Resultado</h2>
+            <p>
+              O resultado econômico de uma empresa é formado pela interação entre receitas, despesas, custos e impostos. Entender cada elemento é essencial para medir a performance e tomar decisões estratégicas.
+            </p>
+            <ul>
+              <li><strong>Receitas:</strong> entradas de recursos provenientes de vendas, serviços ou outras atividades que aumentam o patrimônio;</li>
+              <li><strong>Despesas:</strong> gastos operacionais e administrativos que reduzem o lucro, como salários, energia e aluguel;</li>
+              <li><strong>Custos:</strong> gastos diretamente ligados à produção de bens ou serviços, incluindo matéria-prima, mão de obra e depreciação;</li>
+              <li><strong>Lucro:</strong> diferença entre receitas e a soma de despesas e custos, representando o ganho líquido da empresa.</li>
+            </ul>
+          </section>
+
+          <section id="demonstracoes">
+            <h2 class="section-title">1.7 Demonstrações Contábeis Básicas</h2>
+            <p>
+              As demonstrações contábeis fornecem uma visão completa da situação econômica e financeira da empresa. Elas são obrigatórias para fins legais, fiscais e gerenciais.
+            </p>
+            <ul>
+              <li><strong>Balanço Patrimonial:</strong> apresenta ativos, passivos e patrimônio líquido, mostrando a posição financeira em determinado momento;</li>
+              <li><strong>DMPL:</strong> demonstra as mutações do patrimônio líquido, detalhando aumentos e reduções decorrentes de lucros, dividendos e outros eventos;</li>
+              <li><strong>Fluxo de Caixa:</strong> evidencia entradas e saídas de recursos, permitindo controlar a liquidez e planejar pagamentos;</li>
+              <li><strong>DRE:</strong> demonstração do resultado do exercício, mostrando receitas, despesas, custos e o lucro ou prejuízo líquido.</li>
+            </ul>
+          </section>
+
+          <section id="planejamento">
+            <h2 class="section-title">1.8 Planejamento Financeiro</h2>
+            <p>
+              O planejamento financeiro é o processo de organizar, projetar e controlar recursos financeiros para atingir objetivos estratégicos. Ele permite que a empresa antecipe problemas de liquidez, maximize oportunidades e tome decisões com base em dados concretos.
+            </p>
+            <ul>
+              <li>Levantamento detalhado das receitas e fontes de recursos;</li>
+              <li>Classificação das despesas em fixas, variáveis e investimentos;</li>
+              <li>Reserva financeira para contingências e investimentos futuros;</li>
+              <li>Projeções periódicas, análises de cenários e revisão de metas;</li>
+              <li>Definição de objetivos SMART (específicos, mensuráveis, atingíveis, relevantes e temporais).</li>
+            </ul>
+          </section>
+
+          <section id="custos">
+            <h2 class="section-title">1.9 Controle de Custos e Precificação</h2>
+            <p>
+              O controle de custos é essencial para garantir a sustentabilidade da empresa. Ele permite identificar desperdícios, melhorar a eficiência e definir preços adequados aos produtos e serviços.
+            </p>
+            <ul>
+              <li>Classificação de custos: fixos (independentes do volume de produção) e variáveis (dependem da produção);</li>
+              <li>Precificação: aplicação de mark-up, análise de margem de contribuição e avaliação do valor percebido pelo cliente;</li>
+              <li>Análise de rentabilidade: comparação entre custos, receitas e lucros para decisões estratégicas;</li>
+              <li>Redução de desperdícios e otimização de recursos para aumentar eficiência e competitividade.</li>
+            </ul>
+          </section>
+
+          <section id="obrigacoes">
+            <h2 class="section-title">1.10 Obrigações Fiscais e Tributárias</h2>
+            <p>
+              O cumprimento das obrigações fiscais é fundamental para a conformidade legal e manutenção da reputação da empresa. Ele envolve pagamento correto de tributos, entrega de declarações e cumprimento de prazos legais.
+            </p>
+            <ul>
+              <li>Tributos: DAS, DASN-SIMEI, IRPJ, CSLL, ICMS, ISS e outros;</li>
+              <li>Formas de pagamento: débito automático, boleto bancário, PIX ou transferência;</li>
+              <li>Consequências do não cumprimento: multas, juros, bloqueios de contas, autuações fiscais e risco de perda de enquadramento fiscal;</li>
+              <li>Planejamento tributário: identificação de regimes fiscais, incentivos e obrigações acessórias para reduzir riscos e custos legais.</li>
+            </ul>
+          </section>
+
+          <footer class="small">
+            <p>Arquivo convertido automaticamente para HTML. Conteúdo original: PDF fornecido pelo usuário.</p>
+          </footer>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
