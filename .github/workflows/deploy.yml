@@ -1,45 +1,17 @@
-name: Reusable Deploy
+name: Deploy contabil-frontend
 
 on:
-  workflow_call:
-    inputs:
-      service-name:
-        required: true
-        type: string
-      deployment-name:
-        required: true
-        type: string
-      port:
-        required: true
-        type: string
-    secrets:
-      GHCR_TOKEN:
-        required: true
-      KUBE_CONFIG:
-        required: true
-      TAILSCALE_AUTH_KEY:
-        required: true
+  push:
+    branches:
+      - main
 
 jobs:
-  build-test-deploy:
+  build-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Run tests
-        run: ./mvnw test -B
-
-      - name: Build with Maven
-        run: ./mvnw -B package -DskipTests -q
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -55,7 +27,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/davidemoraesrego/${{ inputs.service-name }}
+          images: ghcr.io/davidemoraesrego/contabil-frontend
           tags: |
             type=sha,prefix=sha-
             type=raw,value=latest
@@ -70,6 +42,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_API_COURSES=${{ secrets.NEXT_PUBLIC_API_COURSES }}
+            NEXT_PUBLIC_API_DESAFIOS=${{ secrets.NEXT_PUBLIC_API_DESAFIOS }}
+            NEXT_PUBLIC_API_LICOES=${{ secrets.NEXT_PUBLIC_API_LICOES }}
+            NEXT_PUBLIC_API_OPCOES_DESAFIOS=${{ secrets.NEXT_PUBLIC_API_OPCOES_DESAFIOS }}
+            NEXT_PUBLIC_API_PROGRESO_DESAFIOS=${{ secrets.NEXT_PUBLIC_API_PROGRESO_DESAFIOS }}
+            NEXT_PUBLIC_API_SUBSCRIPTION=${{ secrets.NEXT_PUBLIC_API_SUBSCRIPTION }}
+            NEXT_PUBLIC_API_UNIDADES=${{ secrets.NEXT_PUBLIC_API_UNIDADES }}
+            NEXT_PUBLIC_API_USUARIO=${{ secrets.NEXT_PUBLIC_API_USUARIO }}
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
@@ -88,14 +71,14 @@ jobs:
 
       - name: Deploy to K8s
         run: |
-          IMAGE=ghcr.io/davidemoraesrego/${{ inputs.service-name }}@${{ steps.build.outputs.digest }}
-          kubectl set image deployment/${{ inputs.deployment-name }} \
-            ${{ inputs.service-name }}=$IMAGE \
+          IMAGE=ghcr.io/davidemoraesrego/contabil-frontend@${{ steps.build.outputs.digest }}
+          kubectl set image deployment/contabil-frontend \
+            frontend=$IMAGE \
             -n contabil-services
-          kubectl rollout status deployment/${{ inputs.deployment-name }} \
+          kubectl rollout status deployment/contabil-frontend \
             -n contabil-services \
             --timeout=300s
 
       - name: Verify deployment
         run: |
-          kubectl get pods -n contabil-services -l app=${{ inputs.service-name }}
+          kubectl get pods -n contabil-services -l app=contabil-frontend
