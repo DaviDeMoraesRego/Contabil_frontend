@@ -1,162 +1,105 @@
 "use client";
 
-import { getAllDesafiosByLicoesId } from "@/services/dasafiosApi";
+import { useEffect, useState, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
+import { Loader } from "lucide-react";
+import { toast } from "sonner";
+
+import { Quiz } from "./quiz";
+import { useExitModal } from "@/store/use-exit-modal";
+
 import { getById } from "@/services/licoesApi";
 import { getUserByClerkId } from "@/services/usuarioApi";
-import { ClerkLoading, useUser } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { Quiz } from "./quiz";
-import { Loader } from "lucide-react";
-import { useExitModal } from "@/store/use-exit-modal";
-import { getByClerkIdAndDesafioId } from "@/services/progressoDesafiosApi";
+import { getAllDesafiosByLicoesId } from "@/services/dasafiosApi";
+import {
+  getByClerkIdAndDesafioId,
+  getDesafiosProgressoByLicao,
+} from "@/services/progressoDesafiosApi";
 import { getSubscription } from "@/services/subscription";
 
 const LicaoPage = () => {
   const { user } = useUser();
-  const [usuario, setUsuario] = useState<any>(null);
-  const [licaoAtiva, setLicaoAtiva] = useState<any>(null);
-  const [licao, setLicao] = useState<any>(null);
-  const [porcentagem, setPorcentagemLicaoAtiva] = useState(0);
-  const [desafios, setDesafios] = useState<any>(null);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState<any>(null);
-
   const { open } = useExitModal();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [usuario, setUsuario] = useState<any>(null);
+  const [licao, setLicao] = useState<any>(null);
+  const [desafios, setDesafios] = useState<any[]>([]);
+  const [porcentagem, setPorcentagem] = useState(0);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       e.preventDefault();
       open();
+      window.history.pushState(null, "", window.location.href);
     };
-
     window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [open]);
 
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, []);
+  const initLesson = useCallback(async () => {
+    if (!user) return;
 
-  useEffect(() => {
-    const data = localStorage.getItem("licaoAtiva");
-    const porcentagemAtiva = localStorage.getItem("porcentagem");
-    console.log(porcentagemAtiva);
-    if (data && porcentagemAtiva) {
-      setLicaoAtiva(JSON.parse(data));
-      setPorcentagemLicaoAtiva(JSON.parse(porcentagemAtiva));
-    }
-  }, []);
+    try {
+      setIsLoading(true);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (!user) return;
+      const storedLicao = localStorage.getItem("licaoAtiva");
+      const storedPct = localStorage.getItem("porcentagem");
 
-      try {
-        const userData = await getUserByClerkId(user.id);
-        setUsuario(userData.data);
-      } catch (error: any) {
-        toast.error("Erro ao buscar o usuário.");
-        console.error(error);
+      if (!storedLicao) {
+        toast.error("Nenhuma lição ativa encontrada.");
+        return;
       }
-    };
 
-    fetchUser();
+      const parsedLicao = JSON.parse(storedLicao);
+      setPorcentagem(storedPct ? JSON.parse(storedPct) : 0);
+
+      const [userRes, licaoFullRes, desafiosRes, progressoRes, subRes] =
+        await Promise.all([
+          getUserByClerkId(user.id),
+          getById(parsedLicao.id),
+          getAllDesafiosByLicoesId(parsedLicao.id),
+          getDesafiosProgressoByLicao(user.id, parsedLicao.id),
+          getSubscription(user.id).catch(() => ({ data: null })),
+        ]);
+
+      setUsuario(userRes.data);
+      setLicao(licaoFullRes.data);
+
+      const progressoMap = new Map<number, boolean>(
+        (progressoRes?.data ?? []).map((p: any) => [p.desafioId, !!p.completo]),
+      );
+
+      setDesafios(
+        (desafiosRes?.data ?? []).map((d: any) => ({
+          ...d,
+          completo: progressoMap.get(d.id) ?? false,
+        })),
+      );
+
+      if (subRes?.data) {
+        setHasSubscription(
+          new Date(subRes.data.stripeCurrentPeriodEnd).getTime() > Date.now(),
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao carregar lição.");
+    } finally {
+      setIsLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {
-    const fecthLicao = async () => {
-      if (!licaoAtiva) return;
+    initLesson();
+  }, [initLesson]);
 
-      try {
-        const licaoData = await getById(licaoAtiva.id);
-        setLicao(licaoData.data);
-      } catch (error) {
-        toast.error("Erro ao buscar a lição.");
-        console.error(error);
-      }
-    };
-
-    fecthLicao();
-  }, [licaoAtiva]);
-
-  useEffect(() => {
-    if (!licao || !usuario) return;
-
-    const fetchDesafios = async () => {
-      try {
-        const response = await getAllDesafiosByLicoesId(licao.id);
-
-        const desafios = await Promise.all(
-          response.data.map(async (desafio: any) => {
-            let completo = false;
-
-            try {
-              const progresso = await getByClerkIdAndDesafioId(
-                usuario.clerkId,
-                desafio.id
-              );
-              completo = progresso.data.completo;
-            } catch (err) {
-              console.error(
-                `Erro ao buscar progresso do desafio ${desafio.id}:`,
-                err
-              );
-              completo = false;
-            }
-
-            return {
-              ...desafio,
-              completo,
-            };
-          })
-        );
-
-        console.log(desafios);
-
-        setDesafios(desafios);
-      } catch (error) {
-        toast.error("Erro ao buscar desafios - " + error);
-        console.error(error);
-      }
-    };
-
-    fetchDesafios();
-  }, [licao, usuario]);
-
-  useEffect(() => {
-    if (!usuario) return;
-
-    const fetchSubscription = async () => {
-      try {
-        const response = await getSubscription(usuario.clerkId);
-
-        if (!response || !response.data) {
-          setHasActiveSubscription(false);
-          return;
-        }
-
-        const subscription = response.data;
-
-        const periodEnd = new Date(subscription.stripeCurrentPeriodEnd);
-
-        const isActive = periodEnd.getTime() > Date.now();
-
-        setHasActiveSubscription(isActive);
-      } catch (error) {
-        console.error("erro ", error);
-        setHasActiveSubscription(false);
-      }
-    };
-
-    fetchSubscription();
-  }, [usuario]);
-
-  if (!licao || !desafios || !usuario) {
+  if (isLoading || !usuario || !licao) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <ClerkLoading>
-          <Loader className="h-32 w-32 text-muted-foreground animate-spin" />
-        </ClerkLoading>
+      <div className="flex items-center justify-center h-screen w-full">
+        <Loader className="h-20 w-20 text-muted-foreground animate-spin" />
       </div>
     );
   }
@@ -169,7 +112,7 @@ const LicaoPage = () => {
       initialHearts={usuario.hearts}
       initialPoints={usuario.points}
       initialPercentage={porcentagem}
-      userSubscription={!!hasActiveSubscription}
+      userSubscription={hasSubscription}
       isPractice={false}
     />
   );

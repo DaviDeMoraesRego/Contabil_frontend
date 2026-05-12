@@ -1,113 +1,102 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
+import { Loader } from "lucide-react";
+import { toast } from "sonner";
+
 import { FeedWrapper } from "@/components/feed-wrapper";
 import { StickyWrapper } from "@/components/sticky-wrapper";
 import { UserProgress } from "@/components/user-progress";
-import { getCourseById } from "@/services/courseApi";
-import { getUserByClerkId } from "@/services/usuarioApi";
-import { ClerkLoading, useUser } from "@clerk/nextjs";
-import { Loader } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { getSubscription } from "@/services/subscription";
 import { Progress } from "@/components/ui/progress";
 import { Promo } from "@/components/promo";
-import { completeCourse, courseDetail, quests } from "@/components/constants";
 import { HasPlan } from "@/components/has-plan";
+
+import { getCourseById } from "@/services/courseApi";
+import { getUserByClerkId } from "@/services/usuarioApi";
+import { getSubscription } from "@/services/subscription";
+import { getPercentageOfCourseConclusion } from "@/services/progressoDesafiosApi";
+import { courseDetail, quests } from "@/components/constants";
 
 const QuestsPage = () => {
   const router = useRouter();
   const { user } = useUser();
+
+  const [isLoading, setIsLoading] = useState(true);
   const [course, setCourse] = useState<any>(null);
   const [usuario, setUsuario] = useState<any>(null);
   const [completeCoursePercentage, setCompleteCoursePercentage] =
-    useState<any>(null);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState<
-    boolean | null
-  >(null);
+    useState<number>(0);
+  const [hasActiveSubscription, setHasActiveSubscription] =
+    useState<boolean>(false);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchUser = async () => {
+    const initQuests = async () => {
       try {
+        setIsLoading(true);
+
         const userData = await getUserByClerkId(user.id);
-        setUsuario(userData.data);
-      } catch (error: any) {
-        toast.error("Erro ao buscar o usuário.");
-        console.error(error);
-      }
-    };
+        const userProfile = userData.data;
 
-    fetchUser();
-  }, [user]);
+        if (!userProfile) throw new Error("Usuário não encontrado");
+        setUsuario(userProfile);
 
-  useEffect(() => {
-    if (!usuario) return;
-
-    const fetchSubscription = async () => {
-      try {
-        const response = await getSubscription(usuario.clerkId);
-
-        if (!response || !response.data) {
-          setHasActiveSubscription(false);
+        if (userProfile.activeCourse === 0) {
+          router.push("/courses");
           return;
         }
 
-        const subscription = response.data;
-        setHasActiveSubscription(subscription);
-
-        const periodEnd = new Date(subscription.stripeCurrentPeriodEnd);
-
-        const isActive = periodEnd.getTime() > Date.now();
-
-        setHasActiveSubscription(isActive);
-      } catch (error) {
-        console.error("erro ", error);
-        setHasActiveSubscription(false);
-      }
-    };
-
-    fetchSubscription();
-  }, [usuario]);
-
-  useEffect(() => {
-    if (!usuario) return;
-
-    const fetchCourse = async () => {
-      if (usuario.activeCourse === 0) {
-        router.push("/courses");
-        return;
-      }
-
-      try {
-        const courseData = await getCourseById(usuario.activeCourse);
-        setCourse(courseData.data);
-        const complete = await completeCourse(
-          usuario.activeCourse,
-          usuario.clerkId
+        const [courseData, percentageResponse, subResponse] = await Promise.all(
+          [
+            getCourseById(userProfile.activeCourse),
+            getPercentageOfCourseConclusion(
+              userProfile.clerkId,
+              userProfile.activeCourse,
+            ),
+            getSubscription(userProfile.clerkId).catch(() => ({ data: null })),
+          ],
         );
-        setCompleteCoursePercentage(complete);
-      } catch (err) {
-        toast.error("Erro ao buscar curso!");
-        console.error(err);
+
+        setCourse(courseData.data);
+
+        console.log(percentageResponse);
+        setCompleteCoursePercentage(Number(percentageResponse.data) || 0);
+
+        if (subResponse?.data) {
+          const periodEnd = new Date(subResponse.data.stripeCurrentPeriodEnd);
+          setHasActiveSubscription(periodEnd.getTime() > Date.now());
+        } else {
+          setHasActiveSubscription(false);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar Quests:", error);
+        toast.error("Não foi possível carregar suas missões.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchCourse();
-  }, [usuario]);
+    initQuests();
+  }, [user, router]);
 
-  if (!usuario || !course || !completeCourse) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <ClerkLoading>
-          <Loader className="h-32 w-32 text-muted-foreground animate-spin" />
-        </ClerkLoading>
+      <div className="flex items-center justify-center h-screen w-full bg-white">
+        <Loader className="h-20 w-20 text-muted-foreground animate-spin" />
       </div>
     );
   }
+
+  if (!usuario || !course) return null;
+
+  const currentCourseTitle =
+    courseDetail(usuario.activeCourse, "tittle") || "Curso";
+  const currentCourseImg =
+    courseDetail(usuario.activeCourse, "img") || "/fallback.svg";
 
   return (
     <div className="flex flex-row-reverse gap-[48px] px-6 pb-32">
@@ -116,7 +105,7 @@ const QuestsPage = () => {
           activeCourse={{ imageSrc: course.imageSrc, title: course.title }}
           hearts={usuario.hearts}
           points={usuario.points}
-          hasActiveSubscription={!!hasActiveSubscription}
+          hasActiveSubscription={hasActiveSubscription}
         />
         {!hasActiveSubscription ? <Promo /> : <HasPlan />}
       </StickyWrapper>
@@ -132,9 +121,13 @@ const QuestsPage = () => {
           <p className="text-muted-foreground text-center text-lg mb-6">
             Complete missões ganhando pontos.
           </p>
+
           <ul className="w-full">
             {quests.map((quest: any) => {
-              const progress = (usuario.points / quest.value) * 100;
+              const progress = Math.min(
+                (usuario.points / quest.value) * 100,
+                100,
+              );
 
               return (
                 <div
@@ -157,23 +150,21 @@ const QuestsPage = () => {
               );
             })}
           </ul>
+
           <h1 className="text-neutral-700 text-lg lg:text-2xl font-bold pt-8 w-full gap-x-4 pb-4">
-            Maestria: {courseDetail(usuario.activeCourse, "tittle")}
+            Maestria: {currentCourseTitle}
           </h1>
-          <div
-            key={usuario.activeCourse}
-            className="flex items-center w-full p-4 gap-x-4 border-t-2"
-          >
+
+          <div className="flex items-center w-full p-4 gap-x-4 border-t-2">
             <Image
-              src={courseDetail(usuario.activeCourse, "img")}
-              alt="Points"
+              src={currentCourseImg}
+              alt="Course Mastery"
               width={60}
               height={60}
             />
             <div className="flex flex-col gap-y-2 w-full">
               <p className="text-neutral-700 text-xl font-bold">
-                Complete o curso "{courseDetail(usuario.activeCourse, "tittle")}
-                "
+                Complete o curso "{currentCourseTitle}"
               </p>
               <Progress value={completeCoursePercentage} className="h-3" />
             </div>

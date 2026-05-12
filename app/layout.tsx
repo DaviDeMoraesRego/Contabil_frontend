@@ -7,6 +7,7 @@ import "./globals.css";
 import { ExitModal } from "@/components/modals/exit-modal";
 import { HeartsModal } from "@/components/modals/hearts-modal";
 import { PracticeModal } from "@/components/modals/practice-modal";
+import { AuthTokenBridge } from "@/auth/authTokenBridge";
 
 const font = Nunito({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
           <ExitModal/>
           <HeartsModal/>
           <PracticeModal/>
+          <AuthTokenBridge/>
           {children}
         </body>
       </html>

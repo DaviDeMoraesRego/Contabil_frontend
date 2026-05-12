@@ -6,16 +6,13 @@ import { useEffect, useState, useTransition } from "react";
 import { useWindowSize } from "react-use";
 import { Header } from "./header";
 import { QuestionBubble } from "./question-bubble";
-import { getAllOpcoesDesafiosByDesafiosId } from "@/services/opcoesDesafiosApi";
+import { getAllOpcoesByLicaoId } from "@/services/opcoesDesafiosApi";
 import { toast } from "sonner";
 import { Challange } from "./challange";
 import { ClerkLoading, useUser } from "@clerk/nextjs";
 import { Loader } from "lucide-react";
 import { Footer } from "./footer";
-import {
-  createProgress,
-  updateCompletoStatus,
-} from "@/services/progressoDesafiosApi";
+import { updateCompletoStatus } from "@/services/progressoDesafiosApi";
 import { getUserByClerkId, updatePointsAndHearts } from "@/services/usuarioApi";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -54,9 +51,11 @@ export const Quiz = ({
   const { user } = useUser();
   const [usuario, setUsuario] = useState<any>(null);
   const [status, setStatus] = useState<"correta" | "incorreta" | "nenhum">(
-    "nenhum"
+    "nenhum",
   );
-  const [opcoes, setOpcoes] = useState<any>(null);
+
+  const [opcoesMap, setOpcoesMap] = useState<Map<number, any[]>>(new Map());
+
   const [hearts, setHearts] = useState(initialHearts);
   const [points, setPoints] = useState(initialPoints);
   const [percentage, setPercentage] = useState(initialPercentage);
@@ -64,7 +63,7 @@ export const Quiz = ({
 
   const [activeIndex, setActiveIndex] = useState<number>(() => {
     const uncompletedIndex = challanges.findIndex(
-      (challange: any) => !challange.completo
+      (challange: any) => !challange.completo,
     );
     return uncompletedIndex === -1 ? 0 : uncompletedIndex;
   });
@@ -75,18 +74,29 @@ export const Quiz = ({
   });
 
   useEffect(() => {
-    if (isPractice) {
-      openPracticeModal();
-    }
+    if (isPractice) openPracticeModal();
 
-    const fetchUser = async () => {
+    const init = async () => {
       if (!user) return;
 
       try {
-        const userData = await getUserByClerkId(user.id);
-        setUsuario(userData.data);
-        setHearts(userData.data.hearts);
-        setPoints(userData.data.points);
+        const [userRes, opcoesRes] = await Promise.all([
+          getUserByClerkId(user.id),
+          getAllOpcoesByLicaoId(initialLessonId),
+        ]);
+
+        const userData = userRes.data;
+        setUsuario(userData);
+        setHearts(userData.hearts);
+        setPoints(userData.points);
+
+        const map = new Map<number, any[]>();
+        for (const opcao of opcoesRes?.data ?? []) {
+          const list = map.get(opcao.desafiosId) ?? [];
+          list.push(opcao);
+          map.set(opcao.desafiosId, list);
+        }
+        setOpcoesMap(map);
       } catch (error: any) {
         if (
           (axios.isAxiosError(error) && error.response?.status === 404) ||
@@ -96,15 +106,16 @@ export const Quiz = ({
         } else {
           toast.error("Erro ao buscar o usuário.");
           console.error(error);
-          return;
         }
       }
     };
 
-    fetchUser();
+    init();
   }, [user, isPractice]);
 
   const challange = challanges[activeIndex];
+
+  const opcoes = challange ? (opcoesMap.get(challange.id) ?? null) : null;
 
   const onNext = () => {
     if (activeIndex + 1 >= challanges.length) {
@@ -142,7 +153,7 @@ export const Quiz = ({
       return;
     }
 
-    const opcaoCorreta = opcoes.find((opcao: any) => opcao.correta == true);
+    const opcaoCorreta = opcoes?.find((opcao: any) => opcao.correta === true);
     if (!opcaoCorreta) return;
 
     if (opcaoCorreta.id === selectedOption) {
@@ -150,11 +161,15 @@ export const Quiz = ({
         await updateCompletoStatus(id, challange.id);
         setStatus("correta");
         setPercentage(((activeIndex + 1) / challanges.length) * 100);
+
         const actualPoints = points + 10;
         setPoints(actualPoints);
-        updatePointsAndHearts(usuario.clerkId, hearts, actualPoints);
+
         if (isPractice && hearts < 5) {
-          setHearts(hearts + 1);
+          const actualHearts = hearts + 1;
+          setHearts(actualHearts);
+          updatePointsAndHearts(usuario.clerkId, actualHearts, actualPoints);
+        } else {
           updatePointsAndHearts(usuario.clerkId, hearts, actualPoints);
         }
       });
@@ -163,17 +178,12 @@ export const Quiz = ({
         openHeartsModal();
         setHearts(0);
       }
+
       if (isPractice || userSubscription) {
-        const actualHearts = hearts;
         const actualPoints = points > 5 ? points - 5 : 0;
         setPoints(actualPoints);
         setStatus("incorreta");
-        await updatePointsAndHearts(
-          usuario.clerkId,
-          actualHearts,
-          actualPoints
-        );
-        return;
+        await updatePointsAndHearts(usuario.clerkId, hearts, actualPoints);
       } else {
         startTransition(async () => {
           const actualHearts = hearts - 1;
@@ -184,7 +194,7 @@ export const Quiz = ({
           await updatePointsAndHearts(
             usuario.clerkId,
             actualHearts,
-            actualPoints
+            actualPoints,
           );
         });
       }
@@ -192,22 +202,6 @@ export const Quiz = ({
   };
 
   const title = challange?.questao;
-
-  useEffect(() => {
-    if (!challange) return;
-
-    const fetchOpçõesDesafios = async () => {
-      try {
-        const response = await getAllOpcoesDesafiosByDesafiosId(challange.id);
-        setOpcoes(response.data);
-      } catch (error) {
-        toast.error("Erro ao buscar opções - " + error);
-        console.error(error);
-      }
-    };
-
-    fetchOpçõesDesafios();
-  }, [challange]);
 
   if (isFinished) {
     return (
@@ -281,24 +275,14 @@ export const Quiz = ({
         desafios={challanges}
       />
       <div className="flex-1 flex items-center justify-center">
-        <div
-          className="
-      w-full max-w-[600px]
-      h-[70vh]
-      flex flex-col
-      justify-between
-      px-6 lg:px-0
-    "
-        >
+        <div className="w-full max-w-[600px] h-[70vh] flex flex-col justify-between px-6 lg:px-0">
           <h1 className="text-lg lg:text-3xl text-center font-bold text-neutral-700 line-clamp-none break-words">
             {title}
           </h1>
-
           <div className="flex-1 overflow-hidden flex flex-col justify-center">
             {challange.tipo === "ASSIST" && (
               <QuestionBubble question={challange.questao} />
             )}
-
             <div className="flex-1 overflow-auto pt-3">
               <Challange
                 options={opcoes}
@@ -312,7 +296,6 @@ export const Quiz = ({
           </div>
         </div>
       </div>
-
       <Footer
         disabled={pending || !selectedOption}
         status={status}

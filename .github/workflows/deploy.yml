@@ -1,0 +1,84 @@
+name: Deploy contabil-frontend
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/davidemoraesrego/contabil-frontend
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_API_COURSES=${{ secrets.NEXT_PUBLIC_API_COURSES }}
+            NEXT_PUBLIC_API_DESAFIOS=${{ secrets.NEXT_PUBLIC_API_DESAFIOS }}
+            NEXT_PUBLIC_API_LICOES=${{ secrets.NEXT_PUBLIC_API_LICOES }}
+            NEXT_PUBLIC_API_OPCOES_DESAFIOS=${{ secrets.NEXT_PUBLIC_API_OPCOES_DESAFIOS }}
+            NEXT_PUBLIC_API_PROGRESO_DESAFIOS=${{ secrets.NEXT_PUBLIC_API_PROGRESO_DESAFIOS }}
+            NEXT_PUBLIC_API_SUBSCRIPTION=${{ secrets.NEXT_PUBLIC_API_SUBSCRIPTION }}
+            NEXT_PUBLIC_API_UNIDADES=${{ secrets.NEXT_PUBLIC_API_UNIDADES }}
+            NEXT_PUBLIC_API_USUARIO=${{ secrets.NEXT_PUBLIC_API_USUARIO }}
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          version: latest
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy to K8s
+        run: |
+          IMAGE=ghcr.io/davidemoraesrego/contabil-frontend@${{ steps.build.outputs.digest }}
+          kubectl set image deployment/contabil-frontend \
+            frontend=$IMAGE \
+            -n contabil-services
+          kubectl rollout status deployment/contabil-frontend \
+            -n contabil-services \
+            --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n contabil-services -l app=contabil-frontend

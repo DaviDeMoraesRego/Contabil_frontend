@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getToken } from "./authTokenManager";
+import { toast } from "sonner";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_UNIDADES;
 
@@ -12,6 +12,7 @@ const axiosWithAuth = axios.create({
 
 async function apiRequest(method: string, path: string) {
   try {
+    const { getToken } = await import("./authTokenManager");
     const token = await getToken();
 
     const config = {
@@ -20,13 +21,20 @@ async function apiRequest(method: string, path: string) {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-      }
+      },
     };
 
     const response = await axios(config);
     return response.data;
   } catch (error: any) {
-    throw error;
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      toast.dismiss()
+      toast.loading("Revalidando sessão...", { id: "session-reload" })
+      location.reload();
+    } else {
+      console.error(error);
+      return;
+    }
   }
 }
 

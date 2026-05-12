@@ -1,15 +1,14 @@
 import { ExitModal } from "@/components/modals/exit-modal";
 import { InfoDialog } from "@/components/modals/InfoModel";
-import { StartLessonDialog } from "@/components/modals/startLesson-modal";
 import { Progress } from "@/components/ui/progress";
 import { useExitModal } from "@/store/use-exit-modal";
 import { InfinityIcon, X } from "lucide-react";
 import Image from "next/image";
 
 type Props = {
-  activeCourse: number
+  activeCourse: number;
   hearts: number;
-  points: number
+  points: number;
   percentage: number;
   hasActiveSubscription: boolean;
   clerkId: string;
@@ -23,16 +22,12 @@ export const Header = ({
   percentage,
   hasActiveSubscription,
 }: Props) => {
-
-    const { open } = useExitModal();
+  const { open } = useExitModal();
   return (
-    
-    
     <header className="lg:pt-[20px] pt-[10px] px-5 flex gap-x-7 items-center justify-between max-w-[1140px] mx-auto w-full">
-      
       <X
         onClick={open}
-        className="text-slate-500 hover:opacity-75 transition cursor-pointer"
+        className="h-7 w-7 sm:h-6 sm:w-6 text-slate-500 hover:opacity-75 transition cursor-pointer"
       />
       <Progress value={percentage} />
       <div className="text-rose-500 flex items-center font-bold">
@@ -59,7 +54,7 @@ export const Header = ({
         />
         {points}
       </div>
-      <InfoDialog pdfId={activeCourse} tam={40}/>
+      <InfoDialog pdfId={activeCourse} tam={40} />
     </header>
   );
 };

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Dialog,
@@ -14,11 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useExitModal } from "@/store/use-exit-modal";
-import { isNull } from "util";
-import { resetLicao } from "@/services/progressoDesafiosApi";
-import { toast } from "sonner";
-import { ClerkLoading } from "@clerk/nextjs";
-import { Loader } from "lucide-react";
 
 export const ExitModal = () => {
   const router = useRouter();
@@ -36,7 +31,13 @@ export const ExitModal = () => {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center w-full justify-center mb-5">
-            <Image src="/sad.svg" alt="tristeza" height={80} width={80} />
+            <Image
+              src="/sad.svg"
+              alt="tristeza"
+              height={80}
+              width={80}
+              className="h-[60px] w-[60px] sm:h-[80px] sm:w-[80px]"
+            />
           </div>
           <DialogTitle className="text-center font-bold text-2xl">
             Espera aí, não vai!
@@ -59,7 +60,10 @@ export const ExitModal = () => {
               variant="dangerOutline"
               className="w-full"
               size="lg"
-              onClick={() => {close(); router.push("/learn");}}
+              onClick={() => {
+                close();
+                router.push("/learn");
+              }}
             >
               Encerrar Lição
             </Button>

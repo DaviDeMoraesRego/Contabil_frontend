@@ -15,51 +15,41 @@ export const quests = [
 export const contacts = [
   {
     tittle: "WhatsApp (Suporte)",
-    url: "https://wa.me/5511999999999?text=Olá,+preciso+de+ajuda+com+o+Contábil!", //TODO: AJUSTAR COM O CELULAR
+    url: "https://wa.me/5511959105162?text=Olá,+preciso+de+ajuda+com+o+Contábil!", //TODO: AJUSTAR COM O CELULAR
     imgUrl: "/whatsapp.svg",
   },
   {
     tittle: "Email (Suporte)",
-    url: "mailto:suporte@contabilapp.com.br?subject=Suporte%20Contábil&body=Descreva%20sua%20dúvida:", //TODO: AJUSTAR COM DOMÍNIO
+    url: "mailto:contabiledu.suporte@gmail.com?subject=Suporte%20Contábil&body=Descreva%20sua%20dúvida:", //TODO: AJUSTAR COM DOMÍNIO
     imgUrl: "/gmail.svg",
   },
   {
     tittle: "Instagram",
-    url: "https://instagram.com/contabil_app", // TODO: CRIAR INSTAGRAM
+    url: "https://www.instagram.com/d_4_v_1moraes/",
     imgUrl: "/instagram.svg",
-  },
-  {
-    tittle: "Telegram (Suporte)",
-    url: "https://t.me/ContabilAppHelp", // TODO: SUBSTITUIR COM TELEGRAM
-    imgUrl: "/telegram.svg",
   },
 ];
 
 export const partners = [
   {
     tittle: "WhatsApp (Parcerias)",
-    url: "https://wa.me/5511999999999?text=Olá,+gostaria+de+falar+sobre+parcerias!", //TODO: AJUSTAR COM O CELULAR
+    url: "https://wa.me/5511959105162?text=Olá,+gostaria+de+falar+sobre+parcerias!", //TODO: AJUSTAR COM O CELULAR
     imgUrl: "/whatsapp.svg",
   },
   {
     tittle: "Email Comercial",
-    url: "mailto:negocios@contabilapp.com.br?subject=Parcerias&body=Olá,+tenho+interesse+em+parceria:", //TODO: AJUSTAR COM DOMÍNIO
+    url: "mailto:contabiledu.suporte@gmail.com?subject=Parcerias&body=Olá,+tenho+interesse+em+parceria:", //TODO: AJUSTAR COM DOMÍNIO
     imgUrl: "/gmail.svg",
   },
   {
     tittle: "LinkedIn",
-    url: "https://www.linkedin.com/in/seu-usuario/", // TODO: AJUSTAR COM USUARIO
+    url: "https://www.linkedin.com/in/davi-de-moraes-3a7a61264/",
     imgUrl: "/linkedin.svg",
   },
   {
     tittle: "Instagram",
-    url: "https://instagram.com/contabil_app", // TODO: CRIAR INSTAGRAM
+    url: "https://www.instagram.com/d_4_v_1moraes/",
     imgUrl: "/instagram.svg",
-  },
-  {
-    tittle: "Telegram (Parcerias)",
-    url: "https://t.me/ContabilAppBusiness", // TODO: SUBSTITUIR COM TELEGRAM
-    imgUrl: "/telegram.svg",
   },
 ];
 

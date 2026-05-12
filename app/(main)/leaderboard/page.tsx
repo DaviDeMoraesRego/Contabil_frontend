@@ -1,157 +1,109 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
+import { Loader } from "lucide-react";
+import { toast } from "sonner";
+
 import { FeedWrapper } from "@/components/feed-wrapper";
 import { StickyWrapper } from "@/components/sticky-wrapper";
 import { UserProgress } from "@/components/user-progress";
-import { getCourseById } from "@/services/courseApi";
-import { getAllUsers, getUserByClerkId } from "@/services/usuarioApi";
-import { ClerkLoading, useUser } from "@clerk/nextjs";
-import { Loader } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getSubscription } from "@/services/subscription";
 import { Promo } from "@/components/promo";
 import { Quests } from "@/components/quests";
 import { HasPlan } from "@/components/has-plan";
 
+import { getCourseById } from "@/services/courseApi";
+import {
+  getTopRanking,
+  getUserRank,
+  getUserByClerkId,
+} from "@/services/usuarioApi";
+import { getSubscription } from "@/services/subscription";
+
 const LeaderboardPage = () => {
   const router = useRouter();
   const { user } = useUser();
+
+  const [isLoading, setIsLoading] = useState(true);
   const [course, setCourse] = useState<any>(null);
   const [usuario, setUsuario] = useState<any>(null);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState<
-    boolean | null
-  >(null);
-  const [ranking, setRanking] = useState<any>(null);
-  const [currentUserRank, setCurrentUserRank] = useState<any>(null);
+  const [ranking, setRanking] = useState<any[]>([]);
+  const [userPosition, setUserPosition] = useState<number | string>("--");
+  const [hasActiveSubscription, setHasActiveSubscription] =
+    useState<boolean>(false);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchUser = async () => {
+    const initLeaderboard = async () => {
       try {
-        const userData = await getUserByClerkId(user.id);
-        setUsuario(userData.data);
-      } catch (error: any) {
-        toast.error("Erro ao buscar o usuário.");
-        console.error(error);
-      }
-    };
+        setIsLoading(true);
 
-    fetchUser();
-  }, [user]);
+        const { data: userProfile } = await getUserByClerkId(user.id);
+        if (!userProfile) throw new Error("Usuário não encontrado");
+        setUsuario(userProfile);
 
-  useEffect(() => {
-    if (!usuario) return;
-
-    const fetchSubscription = async () => {
-      try {
-        const response = await getSubscription(usuario.clerkId);
-
-        if (!response || !response.data) {
-          setHasActiveSubscription(false);
+        if (userProfile.activeCourse === 0) {
+          router.push("/courses");
           return;
         }
 
-        const subscription = response.data;
-        setHasActiveSubscription(subscription);
+        const [courseData, subResponse, rankingResponse, rankResp] =
+          await Promise.all([
+            getCourseById(userProfile.activeCourse),
+            getSubscription(userProfile.clerkId).catch(() => ({ data: null })),
+            getTopRanking(),
+            getUserRank(userProfile.clerkId).catch(() => ({ data: 0 })),
+          ]);
 
-        const periodEnd = new Date(subscription.stripeCurrentPeriodEnd);
-
-        const isActive = periodEnd.getTime() > Date.now();
-
-        setHasActiveSubscription(isActive);
-      } catch (error) {
-        console.error("erro ", error);
-        setHasActiveSubscription(false);
-      }
-    };
-
-    fetchSubscription();
-  }, [usuario]);
-
-  useEffect(() => {
-    if (!usuario) return;
-
-    const fetchCourse = async () => {
-      if (usuario.activeCourse === 0) {
-        router.push("/courses");
-        return;
-      }
-
-      try {
-        const courseData = await getCourseById(usuario.activeCourse);
         setCourse(courseData.data);
-      } catch (err) {
-        toast.error("Erro ao buscar curso!");
-        console.error(err);
-      }
-    };
+        setUserPosition(rankResp.data);
 
-    fetchCourse();
-  }, [usuario]);
+        if (subResponse?.data) {
+          const periodEnd = new Date(subResponse.data.stripeCurrentPeriodEnd);
+          setHasActiveSubscription(periodEnd.getTime() > Date.now());
+        }
 
-  useEffect(() => {
-    if (!usuario || !course) return;
-
-    const fetchAllUsers = async () => {
-      try {
-        const response = await getAllUsers();
-        const data = response.data;
-
-        const sorted = data.sort((a: any, b: any) => b.points - a.points);
-
-        const realIndex = sorted.findIndex(
-          (u: any) => u.clerkId === usuario.clerkId
-        );
-
-        const realUserRank = realIndex !== -1 ? realIndex + 1 : null;
-
-        setCurrentUserRank({
-          ...usuario,
-          rank: realUserRank,
-          isCurrentUser: true,
-        });
-
-        const top200 = sorted.slice(0, 200);
-
-        const enhanced = top200.map((u: any, index: number) => ({
+        const top200 = rankingResponse.data.map((u: any, index: number) => ({
           ...u,
           rank: index + 1,
-          isCurrentUser: u.clerkId === usuario.clerkId,
+          isCurrentUser: u.clerkId === userProfile.clerkId,
         }));
 
-        setRanking(enhanced);
+        setRanking(top200);
       } catch (error) {
-        console.log("Erro ao buscar ranking:", error);
+        console.error("Erro ao carregar ranking:", error);
+        toast.error("Não foi possível carregar o ranking.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchAllUsers();
-  }, [usuario, course]);
+    initLeaderboard();
+  }, [user, router]);
 
-  if (!usuario || !course || !ranking) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <ClerkLoading>
-          <Loader className="h-32 w-32 text-muted-foreground animate-spin" />
-        </ClerkLoading>
+      <div className="flex items-center justify-center h-screen w-full">
+        <Loader className="h-20 w-20 text-muted-foreground animate-spin" />
       </div>
     );
   }
 
+  if (!usuario || !course) return null;
+
   return (
-    <div className="flex flex-row-reverse gap-[48px] px-6 pb-32">
+    <div className="flex flex-row-reverse lg:flex-row-reverse gap-6 lg:gap-[48px] px-4 lg:px-6 pb-6 lg:pb-32">
       <StickyWrapper>
         <UserProgress
           activeCourse={{ imageSrc: course.imageSrc, title: course.title }}
           hearts={usuario.hearts}
           points={usuario.points}
-          hasActiveSubscription={!!hasActiveSubscription}
+          hasActiveSubscription={hasActiveSubscription}
         />
         {!hasActiveSubscription ? <Promo /> : <HasPlan />}
         <Quests points={usuario.points} />
@@ -161,74 +113,63 @@ const LeaderboardPage = () => {
         <div className="w-full flex flex-col items-center">
           <Image
             src="/leaderboard-star.svg"
-            alt="leader"
+            alt="Ranking"
             width={125}
             height={105}
           />
-
-          <h1 className="text-center font-bold text-neutral-800 text-3xl my-6">
+          <h1 className="text-center font-bold text-neutral-800 text-2xl lg:text-3xl my-4 lg:my-6">
             Ranking
           </h1>
-
           <p className="text-muted-foreground text-center text-lg mb-6">
             Veja sua posição entre os outros estudantes da comunidade!
           </p>
 
           <Separator className="mb-4 h-0.5 rounded-full" />
 
-          {/* Lista de top 200 */}
-          {ranking.map((u: any) => (
-            <div
-              key={u.clerkId}
-              className={`flex items-center w-full p-3 px-4 rounded-xl transition 
-                ${
-                  u.isCurrentUser
-                    ? "bg-lime-100 border border-lime-400 shadow-sm"
-                    : "hover:bg-gray-200/50"
-                }
-              `}
-            >
-              <p className="font-bold text-lime-700 mr-4">{u.rank}</p>
-
-              <Avatar className="border bg-gray-100 h-12 w-12 ml-3 mr-6">
-                <AvatarFallback className="font-bold text-neutral-400 text-xl flex items-center justify-center">
-                  {u.nome.trim().charAt(0).toUpperCase()}
-                </AvatarFallback>
-                <AvatarImage className="object-cover" src={u.userImgSrc} />
-              </Avatar>
-
-              <p className="font-bold text-neutral-800 flex-1">{u.nome}</p>
-              <p className="text-muted-foreground">{u.points} XP</p>
-            </div>
-          ))}
-
-          {/* CARD FIXO DO USUÁRIO */}
-          {currentUserRank && (
-            <>
-              <Separator className="my-6 h-0.5 rounded-full" />
-
-              <div className="flex items-center w-full p-3 px-4 rounded-xl bg-blue-50 border border-blue-300 shadow-sm sticky bottom-4">
-                <p className="font-bold text-blue-700 mr-4">
-                  {currentUserRank.rank}
-                </p>
-
-                <Avatar className="border bg-blue-400 h-12 w-12 ml-3 mr-6">
-                  <AvatarImage
-                    className="object-cover"
-                    src={currentUserRank.userImgSrc}
-                  />
+          <div className="w-full flex flex-col gap-y-1">
+            {ranking.map((u) => (
+              <div
+                key={u.clerkId}
+                className={`flex items-center w-full p-2 lg:p-3 px-2 lg:px-4 rounded-xl transition 
+                  ${u.isCurrentUser ? "bg-lime-100 border border-lime-400 shadow-sm" : "hover:bg-gray-100"}
+                `}
+              >
+                <p className="font-bold text-lime-700 w-8">{u.rank}</p>
+                <Avatar className="border bg-gray-100 h-12 w-12 ml-3 mr-6 shadow-sm">
+                  <AvatarImage className="object-cover" src={u.userImgSrc} />
+                  <AvatarFallback className="font-bold text-neutral-400">
+                    {u.nome?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
-
-                <p className="font-bold text-neutral-800 flex-1">
-                  {currentUserRank.nome}
+                <p className="font-bold text-neutral-800 flex-1 truncate min-w-0 mr-2">
+                  {u.nome}
                 </p>
-
-                <p className="text-muted-foreground">
-                  {currentUserRank.points} XP
+                <p className="text-muted-foreground font-medium">
+                  {u.points} <span className="text-xs">XP</span>
                 </p>
               </div>
-            </>
-          )}
+            ))}
+          </div>
+
+          <div className="w-full mt-6">
+            <Separator className="my-6 h-0.5 rounded-full" />
+            <div className="flex items-center w-full p-3 lg:p-4 rounded-xl bg-blue-50 border border-blue-300 shadow-lg sticky bottom-6 z-10 transition-all">
+              <p className="font-bold text-blue-700 w-8">{userPosition}</p>
+              <Avatar className="border-2 border-blue-400 bg-white h-12 w-12 ml-3 mr-6">
+                <AvatarImage
+                  className="object-cover"
+                  src={usuario.userImgSrc}
+                />
+                <AvatarFallback className="font-bold text-blue-400">
+                  {usuario.nome?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <p className="font-bold text-neutral-800 flex-1 truncate">
+                {usuario.nome} (Você)
+              </p>
+              <p className="text-blue-700 font-bold">{usuario.points} XP</p>
+            </div>
+          </div>
         </div>
       </FeedWrapper>
     </div>
