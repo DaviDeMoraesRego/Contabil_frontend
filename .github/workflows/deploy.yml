@@ -3,7 +3,7 @@ name: Deploy contabil-frontend
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-deploy:
