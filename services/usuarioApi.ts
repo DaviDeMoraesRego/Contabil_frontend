@@ -57,7 +57,7 @@ export const getAllUsers = async () => {
 };
 
 export const getUserByClerkId = async (ClerkId: string) => {
-  return await apiRequest("GET", `/${ClerkId}/`, null);
+  return await apiRequest("GET", `/${ClerkId}`, null);
 };
 
 export const updatePointsAndHearts = async (
@@ -70,9 +70,9 @@ export const updatePointsAndHearts = async (
 
 
 export const getTopRanking = async () => {
-  return await apiRequest("GET", `/ranking/`, null);
+  return await apiRequest("GET", `/ranking`, null);
 };
 
 export const getUserRank = async (ClerkId: string) => {
-  return await apiRequest("GET", `/rank/${ClerkId}/`, null);
+  return await apiRequest("GET", `/rank/${ClerkId}`, null);
 };
