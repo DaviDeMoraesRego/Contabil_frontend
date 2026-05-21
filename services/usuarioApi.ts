@@ -57,7 +57,7 @@ export const getAllUsers = async () => {
 };
 
 export const getUserByClerkId = async (ClerkId: string) => {
-  return await apiRequest("GET", `/${ClerkId}`, null);
+  return await apiRequest("GET", `/user`, null);
 };
 
 export const updatePointsAndHearts = async (
